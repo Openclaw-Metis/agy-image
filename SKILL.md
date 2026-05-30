@@ -1,7 +1,7 @@
 ---
 name: agy-image
 description: "Generate images locally with the agy (Antigravity) CLI in print mode — reliable exact-pixel sizing plus optional character-reference consistency. Use when the user asks to make an image with agy or Antigravity — 觸發: 'agy 生圖', '用 agy 生成圖片', '用 antigravity cli 生圖', 'agy 畫一張圖', 'antigravity 出圖', '用 agy 跑張圖'. Not for: editing or analysing an existing image, or non-agy image generation. Output: a PNG at the exact requested pixel size, dimensions verified, attached inline."
-version: 0.1.0
+version: 2026.5.30
 homepage: https://antigravity.google
 license: MIT
 metadata: { "openclaw": { "primaryEnv": "" } }
@@ -105,8 +105,9 @@ Step 2: Generate via the wrapper script
   exact size. Print mode buffers output, so allow several minutes (`--timeout`, default 12m).
 - Input: The composed invocation from Step 1.
 - Output: A single JSON object on stdout and a PNG at `--out`.
-- Validation: JSON `status` is `completed` and the out file exists; on `failed`, read
-  `agy_stdout_tail` / `agy_stderr_tail` and consult `references/troubleshooting.md`.
+- Validation: JSON `status` is `completed` and the out file exists; on `failed`, **stop and
+  report** the agy tail (`agy_stdout_tail` / `agy_stderr_tail`) instead of fabricating an
+  image, and consult `references/troubleshooting.md`.
 
 Step 3: Verify dimensions and enforce size
 - Action: Read JSON `actual` vs `requested`. If `matched` is false and `--crop` was not
@@ -209,3 +210,12 @@ Output:
 - `references/prompt-guide.md` — prompt writing and identity-lock rules for reference images.
 - `references/troubleshooting.md` — failure modes and fixes.
 - `references/readiness_report.md` — release evidence for this skill.
+- `references/migration-governance.md` — rename / deprecate / merge / split governance.
+
+## Evals & lifecycle
+
+- `assets/evals/evals.json` — trigger + functional eval set (direct / indirect / negative,
+  zh / en / mixed) used to check routing and behavior across revisions.
+- `assets/evals/regression_gates.json` — benchmark regression gates for promotion past draft.
+- Lifecycle state (status, owner, review cadence, dependencies) is tracked in
+  `skill_lifecycle.yaml` — currently `draft`.

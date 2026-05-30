@@ -1,0 +1,9 @@
+{
+  "skill": "agy-image",
+  "description": "Benchmark regression gates for promoting agy-image past draft. Compare a with-skill run against a baseline (agy driven ad-hoc without this skill).",
+  "min_pass_rate_delta": 0.0,
+  "max_time_increase_seconds": null,
+  "max_token_increase": null,
+  "require_non_negative_pass_rate": true,
+  "notes": "with-skill must not regress vs baseline on pass rate. Populate run_summary via a paired benchmark (with-skill vs baseline) before changing lifecycle status to candidate/released."
+}

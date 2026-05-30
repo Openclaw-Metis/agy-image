@@ -1,0 +1,34 @@
+name: agy-image
+status: draft
+owner: Openclaw-Metis
+archetype: executor
+primary_structure_pattern: Tool Wrapper
+
+lifecycle:
+  created: 2026-05-30
+  review_interval_days: 90
+  next_review_due: 2026-08-30
+
+support:
+  hosts:
+    - openclaw
+  requires:
+    - "agy (Antigravity CLI) on PATH"
+    - "ffmpeg (optional, only for --crop size enforcement)"
+
+risk:
+  level: low
+  notes: >-
+    Local image generation only; no API keys or secrets in the repo. High-risk
+    actions (publishing, overwriting user files, large batches) are gated by the
+    skill's default follow-through policy.
+
+dependencies:
+  scripts:
+    - scripts/agy_image.py
+  references:
+    - references/agy-cli.md
+    - references/prompt-guide.md
+    - references/troubleshooting.md
+    - references/readiness_report.md
+    - references/migration-governance.md

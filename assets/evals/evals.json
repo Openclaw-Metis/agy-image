@@ -1,0 +1,117 @@
+{
+  "skill": "agy-image",
+  "version": "2026.5.30",
+  "description": "Trigger + functional eval set for the agy-image skill. Direct/indirect prompts should route here; negatives (editing, analysis, other generators) should not.",
+  "benchmark_metadata_required": [
+    "skill_version",
+    "git_commit",
+    "host",
+    "model",
+    "temperature",
+    "run_timestamp",
+    "grader_version"
+  ],
+  "evals": [
+    {
+      "id": "direct-zh-night-portrait",
+      "trigger_class": "direct",
+      "language": "zh",
+      "coverage_tags": ["should-trigger", "happy-path"],
+      "prompt": "用 agy 生一張 9:16 的夜景人像，皮膚白皙、俏皮表情",
+      "expected_output": "Routes to agy-image; resolves 9:16 to explicit pixels and generates a PNG at that exact size.",
+      "expectations": [
+        "selects the agy-image skill",
+        "resolves 9:16 to explicit pixels like 1024x1536",
+        "verifies output dimensions before delivering"
+      ]
+    },
+    {
+      "id": "direct-en-city-4x5",
+      "trigger_class": "direct",
+      "language": "en",
+      "coverage_tags": ["should-trigger", "happy-path"],
+      "prompt": "Generate an image with the agy CLI, 4:5, of a neon-lit city street at night",
+      "expected_output": "Routes to agy-image; translates 4:5 to explicit width/height and produces a verified PNG.",
+      "expectations": [
+        "selects the agy-image skill",
+        "uses explicit width/height not aspect-ratio shorthand",
+        "attaches the image inline with its actual size"
+      ]
+    },
+    {
+      "id": "indirect-mixed-exact-pixels",
+      "trigger_class": "indirect",
+      "language": "mixed",
+      "coverage_tags": ["should-trigger", "edge-case"],
+      "prompt": "用 antigravity cli 跑一張圖，要 1024x1536 直式，不要方圖",
+      "expected_output": "Routes to agy-image; passes width=1024 height=1536 and forbids the 1024x1024 square fallback.",
+      "expectations": [
+        "selects the agy-image skill",
+        "honors the exact 1024x1536 request",
+        "enables the crop fallback if the size drifts"
+      ]
+    },
+    {
+      "id": "indirect-zh-reference-consistency",
+      "trigger_class": "indirect",
+      "language": "zh",
+      "coverage_tags": ["should-trigger", "edge-case"],
+      "prompt": "幫我用 antigravity 出一張角色一致的寫真，參考我存的幾張臉部圖",
+      "expected_output": "Routes to agy-image; passes the reference images via --ref/--refs-dir for identity lock.",
+      "expectations": [
+        "selects the agy-image skill",
+        "passes the reference images for identity",
+        "keeps the prompt about scene not facial features"
+      ]
+    },
+    {
+      "id": "direct-mixed-square-fallback-fix",
+      "trigger_class": "direct",
+      "language": "mixed",
+      "coverage_tags": ["should-trigger", "failure-mode"],
+      "prompt": "agy 又吐了一張 1024x1024 方圖，但我要 4:5，幫我把尺寸修好",
+      "expected_output": "Routes to agy-image; re-runs or applies --crop to enforce the exact 4:5 pixel size.",
+      "expectations": [
+        "selects the agy-image skill",
+        "uses --crop to enforce the exact size",
+        "verifies the corrected dimensions"
+      ]
+    },
+    {
+      "id": "negative-overlap-other-generator",
+      "trigger_class": "negative",
+      "language": "zh",
+      "coverage_tags": ["should-not-trigger", "overlap-neighbor"],
+      "prompt": "用 Midjourney 生一張貓咪太空人漂浮在太空的圖",
+      "expected_output": "Does not route to agy-image; this names a different, non-agy image generator.",
+      "expectations": [
+        "does not select agy-image",
+        "defers to the explicitly requested generator"
+      ]
+    },
+    {
+      "id": "negative-en-edit-existing",
+      "trigger_class": "negative",
+      "language": "en",
+      "coverage_tags": ["should-not-trigger", "near-miss"],
+      "prompt": "Edit this existing photo to remove the background and brighten the subject",
+      "expected_output": "Does not route to agy-image; this is editing an existing image, not agy generation.",
+      "expectations": [
+        "does not select agy-image",
+        "recognizes this as image editing"
+      ]
+    },
+    {
+      "id": "negative-zh-agy-analyze",
+      "trigger_class": "negative",
+      "language": "zh",
+      "coverage_tags": ["should-not-trigger", "near-miss"],
+      "prompt": "用 agy 幫我分析這張圖片裡面有哪些物件、人物和文字內容",
+      "expected_output": "Does not route to agy-image; agy is named but the task is image analysis, not generation.",
+      "expectations": [
+        "does not select agy-image",
+        "treats this as image analysis not generation"
+      ]
+    }
+  ]
+}

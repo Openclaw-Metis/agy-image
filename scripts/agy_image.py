@@ -290,7 +290,15 @@ def main() -> int:
 
     log(f"[agy-image] running agy (timeout {args.timeout}); add-dirs: {add_dirs}")
     log("[agy-image] print mode buffers output — this can take several minutes…")
-    proc = subprocess.run(cmd, capture_output=True, text=True)
+    try:
+        proc = subprocess.run(cmd, capture_output=True, text=True)
+    except FileNotFoundError:
+        print(json.dumps({
+            "status": "failed",
+            "error": f"agy binary not found: {args.agy_bin!r} — is it on PATH?",
+            "out": str(out_path),
+        }, ensure_ascii=False))
+        return 1
     agy_stdout = (proc.stdout or "").strip()
     agy_stderr = (proc.stderr or "").strip()
     last_line = agy_stdout.splitlines()[-1] if agy_stdout else ""

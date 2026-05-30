@@ -1,19 +1,31 @@
 # agy-image — Readiness Report (release evidence)
 
-Skill version: 0.1.0
+Skill version: 2026.5.30
 Audit date: 2026-05-30
 Author: built via skill-creator-advanced.
 
 ## Mechanical gate results
 
-| Gate | Command | Result |
-|------|---------|--------|
-| Format lint | `format_check.py agy-image` | PASS (0 errors, 0 warnings) |
-| OpenClaw frontmatter | `audit_openclaw_frontmatter.py agy-image` | PASS (0 issues) |
-| Semantic structure | `audit_structure.py agy-image --json` | PASS |
-| Reference integrity | `audit_skill_references.py agy-image --json` | PASS (all local paths resolve) |
-| Unreferenced files | `audit_unreferenced_files.py agy-image --json` | PASS (4 source / 4 referenced) |
-| Script compiles | `python3 -m py_compile scripts/agy_image.py` | PASS |
+`release_gate.py agy-image --stage draft` → **PASS** (all checks; benchmark skipped). Individual gates:
+
+| Gate | Result |
+|------|--------|
+| format | PASS (0 errors, 0 warnings) |
+| openclaw frontmatter | PASS (0 issues) |
+| structure (semantic blocks) | PASS |
+| workflow_contract | PASS |
+| semantics / semantic_rules | PASS |
+| lifecycle | PASS (date-based version, benchmark metadata declared) |
+| lifecycle_state (`skill_lifecycle.yaml`) | PASS (status: draft) |
+| eval_coverage | PASS (7 coverage tags, zh/en/mixed) |
+| eval_quality | PASS |
+| golden_trigger_set | PASS (direct=3, indirect=2, negative=3) |
+| wrapper_drift / surface_drift | PASS |
+| migration_governance | PASS |
+| skill_references / unreferenced_files | PASS |
+| healthcheck | PASS |
+| script compiles (`py_compile`) | PASS |
+| benchmark | SKIPPED (live paired run pending) |
 
 Re-run from `/home/ubuntu/.claude/skills/skill-creator-advanced/scripts/` against
 `/home/ubuntu/.openclaw/skills/agy-image`.
@@ -69,8 +81,9 @@ Re-run from `/home/ubuntu/.claude/skills/skill-creator-advanced/scripts/` agains
 
 - agy is an LLM agent; a single run can still drift on size. `--crop` makes the final
   size deterministic; without it, verify `matched` and re-run if needed.
-- No automated trigger/functional eval set is bundled yet (`assets/evals/`). Add paired
-  with-skill/baseline trigger evals before promoting past draft.
+- A trigger + functional eval set is bundled (`assets/evals/evals.json`, 8 cases). The
+  remaining gap is a **live paired benchmark** (with-skill vs baseline) — required to
+  promote lifecycle status past `draft`; gated by `assets/evals/regression_gates.json`.
 - Live generation depends on local Antigravity auth and account quota; failures surface
   via the script JSON `status: failed` with the agy output tail.
 
@@ -78,6 +91,6 @@ Re-run from `/home/ubuntu/.claude/skills/skill-creator-advanced/scripts/` agains
 
 | Gate | Result |
 |------|--------|
-| Format / frontmatter / structure / references / unreferenced | PASS |
+| `release_gate --stage draft` | PASS |
 | Blockers | 0 |
-| Stage | draft (eval set pending for publish) |
+| Stage | draft — publish pending a live paired benchmark |
