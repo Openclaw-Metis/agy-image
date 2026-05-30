@@ -2,7 +2,7 @@
 
 Skill version: 0.1.0
 Audit date: 2026-05-30
-Author: built via skill-creator-advanced, modeled on `krea-nano-banana-2`.
+Author: built via skill-creator-advanced.
 
 ## Mechanical gate results
 
@@ -24,7 +24,7 @@ Re-run from `/home/ubuntu/.claude/skills/skill-creator-advanced/scripts/` agains
 |-------|--------|-------|
 | Auth / permissions documented | PASS | No API key; local auth; wrapper injects `--dangerously-skip-permissions`. |
 | Output contract specifies format | PASS | Verified size + inline attachment; required response shape. |
-| Negative boundary present | PASS | Hands off Krea generation to `krea-nano-banana-2` / `krea-z-image`. |
+| Negative boundary present | PASS | Scoped to agy only; editing/analysis and non-agy generation are out of scope. |
 | Default follow-through policy | PASS | Direct vs ask-first vs stop-and-report defined. |
 | Sizing policy (exact pixels, not ratio) | PASS | Encoded in prompt composition + presets table. |
 | High-risk actions gated | PASS | Publishing / overwriting / large batches require approval. |
@@ -52,8 +52,8 @@ Re-run from `/home/ubuntu/.claude/skills/skill-creator-advanced/scripts/` agains
 ## Structure / scope
 
 - Single primary job: generate one image via the agy CLI at an exact pixel size,
-  optionally identity-locked. Krea generation is explicitly handed off to
-  `krea-nano-banana-2` / `krea-z-image` (negative boundary in description + decision_boundary).
+  optionally identity-locked. Editing/analysis and non-agy image generation are out of
+  scope (negative boundary in description + decision_boundary).
 - Wrapper is thin: it composes the prompt, runs `agy --print`, verifies, and (optionally)
   enforces size. No new backend, no hidden state in the skill folder.
 

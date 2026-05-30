@@ -16,7 +16,7 @@ On this machine `agy` is a bash wrapper around the real binary `agy.real`. It:
 
 Because of (1) you do **not** pass the danger flag yourself. To opt out, set
 `AGY_REQUIRE_PERMISSIONS=1`. No API key is needed; auth is local and generation
-uses the Antigravity/Gemini account quota (not Krea credits).
+uses the Antigravity/Gemini account quota (no usage credits).
 
 ## Print-mode flags used by this skill
 

@@ -1,6 +1,6 @@
 ---
 name: agy-image
-description: "Generate images locally with the agy (Antigravity) CLI in print mode — reliable exact-pixel sizing plus optional character-reference consistency. Use when the user asks to make an image with agy or Antigravity — 觸發: 'agy 生圖', '用 agy 生成圖片', '用 antigravity cli 生圖', 'agy 畫一張圖', 'antigravity 出圖', '用 agy 跑張圖'. Not for: Krea / Nano-Banana / Z-Image generation (use krea-nano-banana-2 or krea-z-image), editing or analysing an existing image, or non-agy image work. Output: a PNG at the exact requested pixel size, dimensions verified, attached inline."
+description: "Generate images locally with the agy (Antigravity) CLI in print mode — reliable exact-pixel sizing plus optional character-reference consistency. Use when the user asks to make an image with agy or Antigravity — 觸發: 'agy 生圖', '用 agy 生成圖片', '用 antigravity cli 生圖', 'agy 畫一張圖', 'antigravity 出圖', '用 agy 跑張圖'. Not for: editing or analysing an existing image, or non-agy image generation. Output: a PNG at the exact requested pixel size, dimensions verified, attached inline."
 version: 0.1.0
 homepage: https://antigravity.google
 license: MIT
@@ -10,7 +10,7 @@ metadata: { "openclaw": { "primaryEnv": "" } }
 # Agy Image (Antigravity CLI)
 
 Generate images on the local machine by driving the **agy (Antigravity) CLI** in
-print mode. No API key and no Krea credits — agy authenticates locally and uses
+print mode. No API key and no usage credits — agy authenticates locally and uses
 the Antigravity/Gemini account quota.
 
 <role>
@@ -28,9 +28,8 @@ Use when:
   consistency from local reference images, via agy.
 
 Do not use when:
-- The user asks for Krea / Nano Banana / Z-Image generation — hand off to
-  `krea-nano-banana-2` or `krea-z-image`.
-- The task is editing or analysing an existing image, or any non-agy image work.
+- The task is editing or analysing an existing image, or any non-agy image
+  generation (a different/dedicated image backend should handle those).
 
 Inputs:
 - A scene/subject prompt; target pixel size (or a ratio to translate to pixels);
@@ -82,7 +81,7 @@ then generate.
 
 <workflow>
 Step 0: Confirm request and resolve sizing
-- Action: Confirm the brief is an agy image job (not Krea); resolve the target to exact
+- Action: Confirm the brief is an agy image job; resolve the target to exact
   `--width`/`--height` pixels using the presets table; pick an output path under a
   writable dir (default `/home/ubuntu/agy_images/`).
 - Input: User prompt, any ratio or size, optional reference image paths.

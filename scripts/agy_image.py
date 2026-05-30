@@ -22,7 +22,7 @@ Prints a single JSON object to stdout:
 Auth / permissions:
   No API key. agy authenticates locally; the `agy` wrapper auto-injects
   `--dangerously-skip-permissions`. Generation consumes the local
-  Antigravity/Gemini account quota, not Krea credits.
+  Antigravity/Gemini account quota (no API key, no usage credits).
 
 Notes:
   - agy sometimes writes JPEG bytes under a `.png` name; "format" reports the
