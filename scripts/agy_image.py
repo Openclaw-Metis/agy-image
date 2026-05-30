@@ -144,6 +144,16 @@ def compose_prompt(
         " Do NOT output a 1024x1024 square, and do not pad or upscale a square "
         "to reach this size."
     )
+    lines.append(
+        "\n【執行紀律｜EXECUTION DISCIPLINE — 必讀】\n"
+        "你（agy）就是圖片生成器本身。請『直接』用你內建的圖片生成工具 "
+        "(your built-in generate_image tool) 產生這張圖並存成上面的 PNG 路徑。"
+        " 嚴禁執行任何 shell 指令、python 腳本、`agy_image.py`，也不要呼叫或載入 "
+        "`agy-image` skill 或再開一個 agy/Antigravity session 來生圖。"
+        " Do NOT run any shell command, python script, agy_image.py, or the "
+        "agy-image skill, and do NOT spawn another agy session — generate the "
+        "image yourself with your native image tool. 做完直接回報路徑與尺寸即可。"
+    )
     if refs:
         ref_block = "\n".join(f"- {r}" for r in refs)
         anchor = subject_anchor or "參考圖中的同一個人 / the same person as in the references"
@@ -259,6 +269,25 @@ def main() -> int:
         out_path = out_path.resolve()
     out_path.parent.mkdir(parents=True, exist_ok=True)
 
+    # Re-entrancy guard. This script drives `agy`, which is itself an Antigravity
+    # *agent*: it can see the agy-image skill in ~/.openclaw/skills and "helpfully"
+    # re-run this very script, spawning another agy → an unbounded
+    # agy.real -> agy_image.py -> agy.real recursion that only ends when the caller
+    # (e.g. a time-boxed autonomous cron) times out, producing no image. We mark depth in the
+    # child env (below); if we're already inside an agy-image generation, refuse to
+    # spawn another agy and tell the agent to use its native image tool instead.
+    if os.environ.get("AGY_IMAGE_DEPTH"):
+        print(json.dumps({
+            "status": "failed",
+            "error": ("agy-image re-entry blocked: already inside an agy-image "
+                      "generation (AGY_IMAGE_DEPTH set). Do NOT run agy_image.py "
+                      "here — use your built-in generate_image tool to create the "
+                      f"PNG at {out_path} at exactly {args.width}x{args.height} px."),
+            "out": str(out_path),
+            "reentry": True,
+        }, ensure_ascii=False))
+        return 1
+
     refs = [str(pathlib.Path(r).expanduser()) for r in args.ref]
     missing = [r for r in refs if not pathlib.Path(r).exists()]
     if missing:
@@ -290,8 +319,12 @@ def main() -> int:
 
     log(f"[agy-image] running agy (timeout {args.timeout}); add-dirs: {add_dirs}")
     log("[agy-image] print mode buffers output — this can take several minutes…")
+    # Mark depth so a nested agy-image invocation (the inner agy re-running this
+    # script) hits the re-entrancy guard above and fails fast instead of recursing.
+    child_env = os.environ.copy()
+    child_env["AGY_IMAGE_DEPTH"] = "1"
     try:
-        proc = subprocess.run(cmd, capture_output=True, text=True)
+        proc = subprocess.run(cmd, capture_output=True, text=True, env=child_env)
     except FileNotFoundError:
         print(json.dumps({
             "status": "failed",
