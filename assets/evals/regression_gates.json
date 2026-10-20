@@ -5,5 +5,10 @@
   "max_time_increase_seconds": null,
   "max_token_increase": null,
   "require_non_negative_pass_rate": true,
-  "notes": "with-skill must not regress vs baseline on pass rate. Populate run_summary via a paired benchmark (with-skill vs baseline) before changing lifecycle status to candidate/released."
+  "notes": "with-skill must not regress vs baseline on pass rate. Populate run_summary via a paired benchmark (with-skill vs baseline) before changing lifecycle status to candidate/released.",
+  "deterministic_regression": {
+    "command": "python scripts/test_agy_image.py",
+    "required": true,
+    "notes": "Fake-agy suite; must pass on every change. Spends no agy quota."
+  }
 }

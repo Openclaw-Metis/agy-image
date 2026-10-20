@@ -1,0 +1,23 @@
+release_policy:
+  # Checks that must pass before a version of agy-image is pushed or packaged.
+  required_checks:
+    - deterministic_regression   # python scripts/test_agy_image.py
+    - evaluation                 # SkillOps stage gate: format, references, evals
+    - security                   # SkillOps security audit
+    - lifecycle                  # skill_lifecycle.yaml status and review dates
+    - migration                  # references/migration-governance.md entry for behaviour changes
+  live_smoke:
+    # One real agy image (plus one --ref image when the reference path changed),
+    # recorded in references/readiness_report.md. Spends native image quota.
+    required_when:
+      - wrapper_run_or_recovery_changed
+      - prompt_composition_changed
+  require_live_benchmark_for_claims:
+    - quality_improvement
+    - status_past_draft
+  block_if:
+    - required_gate_failed
+    - required_gate_blocked
+    - missing_rollback_path
+    - unapproved_external_side_effect
+  rollback: "git revert the release commit, or check out the previous tag/commit in the skill folder"

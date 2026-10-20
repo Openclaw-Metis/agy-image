@@ -1,96 +1,61 @@
 # agy-image — Readiness Report (release evidence)
 
-Skill version: 2026.5.30
-Audit date: 2026-05-30
-Author: built via skill-creator-advanced.
+Skill version: 2026.10.20
+Audit date: 2026-10-20
+Previous version: 2026.5.30 (commit `46186a6`)
+Change type: failure-driven revision (SkillOps Studio `evolve`), evidence level E2.
+Host for this round: Windows 11, agy 1.4.1, Python 3.13, ffmpeg 9.0.1.
 
-## Mechanical gate results
+## Common errors fixed in this revision (failure records)
 
-`release_gate.py agy-image --stage draft` → **PASS** (all checks; benchmark skipped). Individual gates:
+| ID | Class | Observed (source, date) | Fix in 2026.10.20 |
+|----|-------|-------------------------|-------------------|
+| F1 | tool_contract | Since agy 1.2.16 the image lands in `~/.gemini/antigravity-cli/brain/<conv>/` and print mode can return first; the wrapper printed "agy did not produce the output file" for images that existed (OpenMontage runs 2026-10-10, -12, -13; agy changelog 1.2.16). | `--output-format json` for the conversation id, bounded polling (`--wait-seconds`), brain recovery into `--out`. |
+| F2 | resource | agy 1.3.3 started inside a repo opened `.agents/skills`, print mode denied the read, no image (2026-10-12). | agy runs from a fresh empty temp folder. |
+| F3 | safety | `--ref` prompt told agy to read the reference; print mode denied `read_file` (2026-10-14). | Reference paths go straight to the image tool; `permission_denied` is classified; bypass is an explicit opt-in. |
+| F4 | performance | Native image quota ran out after about ten images; retries burned time (2026-10-14). | `quota_exhausted` classified, short poll budget, stop rule in SKILL.md. |
+| F5 | tool_contract | Callers had to set `PYTHONUTF8=1` on Windows (2026-10-10). | The script decodes agy output and writes its own stdout as UTF-8. |
+| F6 | tool_contract | No wrapper-side timeout; `--print-timeout` expiry exits 0 (agy changelog). | Subprocess timeout = `--timeout` + 60 s; `timeout` classified. |
+| F7 | instruction | Stale `--out` from an earlier run reported as the new result; silent overwrite despite the ask-first policy (code inspection). | `--out` is no-clobber unless `--overwrite`; only files newer than the run count. |
+| F8 | instruction | SKILL.md hard-coded `/home/ubuntu` paths and the Linux wrapper's permission injection. | Portable paths; per-host install table in `agy-cli.md`. |
 
-| Gate | Result |
-|------|--------|
-| format | PASS (0 errors, 0 warnings) |
-| openclaw frontmatter | PASS (0 issues) |
-| structure (semantic blocks) | PASS |
-| workflow_contract | PASS |
-| semantics / semantic_rules | PASS |
-| lifecycle | PASS (date-based version, benchmark metadata declared) |
-| lifecycle_state (`skill_lifecycle.yaml`) | PASS (status: draft) |
-| eval_coverage | PASS (7 coverage tags, zh/en/mixed) |
-| eval_quality | PASS |
-| golden_trigger_set | PASS (direct=3, indirect=2, negative=3) |
-| wrapper_drift / surface_drift | PASS |
-| migration_governance | PASS |
-| skill_references / unreferenced_files | PASS |
-| healthcheck | PASS |
-| script compiles (`py_compile`) | PASS |
-| benchmark | SKIPPED (live paired run pending) |
+## Commands run and results
 
-Re-run from `/home/ubuntu/.claude/skills/skill-creator-advanced/scripts/` against
-`/home/ubuntu/.openclaw/skills/agy-image`.
+| Command | Result |
+|---------|--------|
+| `python scripts/test_agy_image.py` (2026.10.20) | **18/18 PASS** (fake agy, no quota). |
+| `AGY_IMAGE_SCRIPT=<46186a6 agy_image.py> python scripts/test_agy_image.py` | 16 FAIL + 1 ERROR, 1 PASS (re-entry guard): the suite reproduces F1–F7 on the previous version. |
+| Live: 1024x1280 portrait, `--crop` (intermediate build) | completed, `source: brain`, agy wrote 896x1200 JPEG and did not write `--out`; cropped to 1024x1280 PNG; 151 s. |
+| Live: same size with `--ref` of the first image (intermediate build) | completed, `source: brain`, no permission denial on agy 1.4.1; 896x1200 → 1024x1280 PNG; 203 s. Identity looked consistent by eye (not measured). |
+| Live: 1920x1080 plate, `--crop` (final build) | completed, `source: brain` (file named by agy `taiwan_tea_plantation_sunrise_<ts>.jpg`), 1376x768 → 1920x1080 PNG; 79 s; agy's reply claimed 1792x1024, the header said 1376x768. No temp run folder left behind. |
+| SkillOps `stage_gate.py --stage evolve --require-security` | PASS |
+| SkillOps `stage_gate.py --stage revise --require-security` | PASS |
+| SkillOps `release_gate.py --stage publish` | PASS |
 
-## Requirement / policy checks
+Gate details (2026.10.20): format, skill_references, unreferenced_files,
+skill_consistency, eval_assets (12 cases; direct/indirect/negative; zh/en/mixed) and
+skill_security PASS. Advisory only: instruction_control (no blocking findings);
+security warning `output_workspace_boundary_missing` accepted, because the output path
+is chosen by the user by design and replacing a file needs `--overwrite` plus approval.
+`benchmark` SKIPPED: no frozen live paired benchmark exists.
 
-| Check | Status | Notes |
-|-------|--------|-------|
-| Auth / permissions documented | PASS | No API key; local auth; wrapper injects `--dangerously-skip-permissions`. |
-| Output contract specifies format | PASS | Verified size + inline attachment; required response shape. |
-| Negative boundary present | PASS | Scoped to agy only; editing/analysis and non-agy generation are out of scope. |
-| Default follow-through policy | PASS | Direct vs ask-first vs stop-and-report defined. |
-| Sizing policy (exact pixels, not ratio) | PASS | Encoded in prompt composition + presets table. |
-| High-risk actions gated | PASS | Publishing / overwriting / large batches require approval. |
+## Rollback
 
-## Common error checks
-
-| Check | Status | Notes |
-|-------|--------|-------|
-| Square (1024x1024) fallback | PASS | `--crop` enforces exact size; troubleshooting documents it. |
-| Wrong / near-ratio size | PASS | ffmpeg center-crop + scale to exact pixels. |
-| JPEG bytes under `.png` name | PASS | Detector reports true container in `format`. |
-| agy not found / unauthenticated | PASS | `failed` status surfaces stdout/stderr tail. |
-| Timeout | PASS | `--timeout` (default 12m); buffered output explained. |
-| Reference ignored / face drift | PASS | 1–2 front-facing refs; remove facial descriptors. |
-
-## Functional verification (this session)
-
-| Check | Evidence |
-|-------|----------|
-| Prompt composition | `--dry-run` emits size-lock + reference block + correct deduped `--add-dir` list (output dir + refs dir). |
-| Dimension detector (no PIL) | Correctly read 576x1024 PNG, 1024x1536 PNG, 818x1024 PNG, and detected the **JPEG-bytes-under-.png** case (1024x1024 jpeg). |
-| ffmpeg size enforce | 1024x1024 jpeg → exact **1024x1280** png via center-crop + scale. |
-| End-to-end agy run | Not re-run inside the skill, but the underlying flow (explicit `1024x1536` pixels → native 1024x1536 output) was validated live this session before the skill was authored. |
-
-## Structure / scope
-
-- Single primary job: generate one image via the agy CLI at an exact pixel size,
-  optionally identity-locked. Editing/analysis and non-agy image generation are out of
-  scope (negative boundary in description + decision_boundary).
-- Wrapper is thin: it composes the prompt, runs `agy --print`, verifies, and (optionally)
-  enforces size. No new backend, no hidden state in the skill folder.
-
-## Design provenance (why the rules exist)
-
-- agy's image tool defaults to a 1024x1024 square and honours ratio shorthand
-  inconsistently; explicit pixel dimensions are reliable. This is the core rule the
-  skill encodes (see `agy-cli.md`).
-- agy may write JPEG bytes under a `.png` name → detector reports the real container.
-- PIL is absent on this host → header-only dimension parsing + ffmpeg for cropping.
+- Repository: `git revert` the 2026.10.20 commit, or check out `46186a6`.
+- Installed copy: before syncing, the installed folder was compared with `46186a6` and
+  matched it (line endings aside), so checking out that commit into the skill folder
+  returns the old behaviour.
+- Contract changes and caller migration are listed in `migration-governance.md`.
 
 ## Known limitations / residual risk
 
-- agy is an LLM agent; a single run can still drift on size. `--crop` makes the final
-  size deterministic; without it, verify `matched` and re-run if needed.
-- A trigger + functional eval set is bundled (`assets/evals/evals.json`, 8 cases). The
-  remaining gap is a **live paired benchmark** (with-skill vs baseline) — required to
-  promote lifecycle status past `draft`; gated by `assets/evals/regression_gates.json`.
-- Live generation depends on local Antigravity auth and account quota; failures surface
-  via the script JSON `status: failed` with the agy output tail.
-
-## Final gate
-
-| Gate | Result |
-|------|--------|
-| `release_gate --stage draft` | PASS |
-| Blockers | 0 |
-| Stage | draft — publish pending a live paired benchmark |
+- No live paired benchmark (with-skill vs ad-hoc agy), so no quality-improvement claim is
+  made and lifecycle stays `draft`.
+- `quota_exhausted`, `permission_denied` and `auth_required` are keyword classifications;
+  the exact agy wording for an exhausted image quota was not captured this round.
+- The permission-denial path for `--ref` was reproduced only with the fake agy; on
+  agy 1.4.1 the reference run was not denied.
+- agy's main agent can keep running after the image exists; the wrapper waits for it
+  instead of stopping it early, because the image-generator may still be retrying.
+- agy inherits the caller's full environment (it needs the user's local sign-in).
+- This round ran on Windows only; the Linux path is unchanged in design but was not re-run.
