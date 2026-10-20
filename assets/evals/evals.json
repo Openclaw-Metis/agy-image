@@ -1,7 +1,7 @@
 {
   "skill": "agy-image",
-  "version": "2026.5.30",
-  "description": "Trigger + functional eval set for the agy-image skill. Direct/indirect prompts should route here; negatives (editing, analysis, other generators) should not.",
+  "version": "2026.10.20",
+  "description": "Trigger + functional eval set for the agy-image skill. Direct/indirect prompts should route here; negatives (editing, analysis, other generators) should not. Failure-mode cases come from real runs on agy 1.2.16-1.4.x and are mirrored by the deterministic tests in scripts/test_agy_image.py.",
   "benchmark_metadata_required": [
     "skill_version",
     "git_commit",
@@ -16,7 +16,10 @@
       "id": "direct-zh-night-portrait",
       "trigger_class": "direct",
       "language": "zh",
-      "coverage_tags": ["should-trigger", "happy-path"],
+      "coverage_tags": [
+        "should-trigger",
+        "happy-path"
+      ],
       "prompt": "用 agy 生一張 9:16 的夜景人像，皮膚白皙、俏皮表情",
       "expected_output": "Routes to agy-image; resolves 9:16 to explicit pixels and generates a PNG at that exact size.",
       "expectations": [
@@ -29,7 +32,10 @@
       "id": "direct-en-city-4x5",
       "trigger_class": "direct",
       "language": "en",
-      "coverage_tags": ["should-trigger", "happy-path"],
+      "coverage_tags": [
+        "should-trigger",
+        "happy-path"
+      ],
       "prompt": "Generate an image with the agy CLI, 4:5, of a neon-lit city street at night",
       "expected_output": "Routes to agy-image; translates 4:5 to explicit width/height and produces a verified PNG.",
       "expectations": [
@@ -42,7 +48,10 @@
       "id": "indirect-mixed-exact-pixels",
       "trigger_class": "indirect",
       "language": "mixed",
-      "coverage_tags": ["should-trigger", "edge-case"],
+      "coverage_tags": [
+        "should-trigger",
+        "edge-case"
+      ],
       "prompt": "用 antigravity cli 跑一張圖，要 1024x1536 直式，不要方圖",
       "expected_output": "Routes to agy-image; passes width=1024 height=1536 and forbids the 1024x1024 square fallback.",
       "expectations": [
@@ -55,7 +64,10 @@
       "id": "indirect-zh-reference-consistency",
       "trigger_class": "indirect",
       "language": "zh",
-      "coverage_tags": ["should-trigger", "edge-case"],
+      "coverage_tags": [
+        "should-trigger",
+        "edge-case"
+      ],
       "prompt": "幫我用 antigravity 出一張角色一致的寫真，參考我存的幾張臉部圖",
       "expected_output": "Routes to agy-image; passes the reference images via --ref/--refs-dir for identity lock.",
       "expectations": [
@@ -68,7 +80,10 @@
       "id": "direct-mixed-square-fallback-fix",
       "trigger_class": "direct",
       "language": "mixed",
-      "coverage_tags": ["should-trigger", "failure-mode"],
+      "coverage_tags": [
+        "should-trigger",
+        "failure-mode"
+      ],
       "prompt": "agy 又吐了一張 1024x1024 方圖，但我要 4:5，幫我把尺寸修好",
       "expected_output": "Routes to agy-image; re-runs or applies --crop to enforce the exact 4:5 pixel size.",
       "expectations": [
@@ -81,7 +96,10 @@
       "id": "negative-overlap-other-generator",
       "trigger_class": "negative",
       "language": "zh",
-      "coverage_tags": ["should-not-trigger", "overlap-neighbor"],
+      "coverage_tags": [
+        "should-not-trigger",
+        "overlap-neighbor"
+      ],
       "prompt": "用 Midjourney 生一張貓咪太空人漂浮在太空的圖",
       "expected_output": "Does not route to agy-image; this names a different, non-agy image generator.",
       "expectations": [
@@ -93,7 +111,10 @@
       "id": "negative-en-edit-existing",
       "trigger_class": "negative",
       "language": "en",
-      "coverage_tags": ["should-not-trigger", "near-miss"],
+      "coverage_tags": [
+        "should-not-trigger",
+        "near-miss"
+      ],
       "prompt": "Edit this existing photo to remove the background and brighten the subject",
       "expected_output": "Does not route to agy-image; this is editing an existing image, not agy generation.",
       "expectations": [
@@ -105,12 +126,81 @@
       "id": "negative-zh-agy-analyze",
       "trigger_class": "negative",
       "language": "zh",
-      "coverage_tags": ["should-not-trigger", "near-miss"],
+      "coverage_tags": [
+        "should-not-trigger",
+        "near-miss"
+      ],
       "prompt": "用 agy 幫我分析這張圖片裡面有哪些物件、人物和文字內容",
       "expected_output": "Does not route to agy-image; agy is named but the task is image analysis, not generation.",
       "expectations": [
         "does not select agy-image",
         "treats this as image analysis not generation"
+      ]
+    },
+    {
+      "id": "failure-zh-brain-folder-recovery",
+      "trigger_class": "direct",
+      "language": "zh",
+      "coverage_tags": [
+        "should-trigger",
+        "failure-mode"
+      ],
+      "prompt": "用 agy 生一張 16:9 的影片背景，上次它說沒產出檔案，但圖其實在 brain 資料夾裡",
+      "expected_output": "Routes to agy-image; runs the wrapper, which recovers the image from the agy brain folder into --out and reports source=brain with the verified size.",
+      "expectations": [
+        "selects the agy-image skill",
+        "uses --width 1920 --height 1080 (or 1536x864) with --crop",
+        "reports the verified actual size and that the image came from the brain folder",
+        "does not tell the user generation failed when the JSON status is completed"
+      ]
+    },
+    {
+      "id": "failure-mixed-quota-exhausted",
+      "trigger_class": "indirect",
+      "language": "mixed",
+      "coverage_tags": [
+        "should-trigger",
+        "failure-mode"
+      ],
+      "prompt": "antigravity 一直生圖失敗，log 說 image quota exhausted，幫我再跑十張",
+      "expected_output": "Routes to agy-image; treats quota_exhausted as a stop condition, reports the reset time, and asks before a batch of more than three images instead of retrying in a loop.",
+      "expectations": [
+        "selects the agy-image skill",
+        "stops on error_kind quota_exhausted instead of retrying",
+        "asks before running a batch larger than three images"
+      ]
+    },
+    {
+      "id": "failure-en-reference-permission-denied",
+      "trigger_class": "direct",
+      "language": "en",
+      "coverage_tags": [
+        "should-trigger",
+        "failure-mode",
+        "edge-case"
+      ],
+      "prompt": "Use agy to make a 4:5 photo of my character from ref.png, last time it said read_file permission denied",
+      "expected_output": "Routes to agy-image; runs with --ref, and on error_kind permission_denied asks the user before adding an allow-rule or passing --allow-agy-permissions, offering a retry without --ref.",
+      "expectations": [
+        "selects the agy-image skill",
+        "does not pass --allow-agy-permissions without the user's approval",
+        "explains the permission_denied next step from the failure table"
+      ]
+    },
+    {
+      "id": "edge-zh-existing-output-file",
+      "trigger_class": "direct",
+      "language": "zh",
+      "coverage_tags": [
+        "should-trigger",
+        "edge-case"
+      ],
+      "prompt": "用 agy 重畫一張 ~/agy_images/onsen.png，同一個檔名覆蓋掉舊的",
+      "expected_output": "Routes to agy-image; because the file exists, confirms the overwrite (the user asked for it here) and runs with --overwrite, never reporting the old file as the new result.",
+      "expectations": [
+        "selects the agy-image skill",
+        "passes --overwrite only because the user asked to replace the file",
+        "reports the size of the newly generated file"
       ]
     }
   ]

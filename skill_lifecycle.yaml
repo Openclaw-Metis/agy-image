@@ -6,29 +6,43 @@ primary_structure_pattern: Tool Wrapper
 
 lifecycle:
   created: 2026-05-30
+  last_revised: 2026-10-20
   review_interval_days: 90
-  next_review_due: 2026-08-30
+  next_review_due: 2027-01-18
 
 support:
   hosts:
     - openclaw
+    - claude-code
+  platforms:
+    - linux
+    - windows
   requires:
-    - "agy (Antigravity CLI) on PATH"
-    - "ffmpeg (optional, only for --crop size enforcement)"
+    - "agy (Antigravity CLI) 1.2.16 or later on PATH"
+    - "Python 3.8+ (stdlib only)"
+    - "ffmpeg (optional, for --crop and for re-encoding agy's JPEG output)"
 
 risk:
   level: low
   notes: >-
-    Local image generation only; no API keys or secrets in the repo. High-risk
-    actions (publishing, overwriting user files, large batches) are gated by the
-    skill's default follow-through policy.
+    Local image generation only; no API keys or secrets in the repo. agy runs from
+    an empty temp folder and inherits the caller's environment because it needs the
+    user's local sign-in. Replacing an existing file (--overwrite), bypassing agy's
+    permission prompts (--allow-agy-permissions), publishing, and batches of more
+    than three images are ask-first actions in the skill's follow-through policy.
 
 dependencies:
   scripts:
     - scripts/agy_image.py
+    - scripts/test_agy_image.py
   references:
     - references/agy-cli.md
     - references/prompt-guide.md
     - references/troubleshooting.md
     - references/readiness_report.md
     - references/migration-governance.md
+  policies:
+    - policies/release_policy.yaml
+  evals:
+    - assets/evals/evals.json
+    - assets/evals/regression_gates.json

@@ -21,7 +21,10 @@ Always set the size with the script's `--width`/`--height`. See `agy-cli.md`.
 ## Identity preservation with reference images
 
 Use `--ref <path>` (repeatable) plus `--refs-dir <dir>` when the goal is the **same
-person** across scenes. Core rule:
+person** across scenes. The composed prompt hands each reference path straight to agy's
+image tool and tells agy not to open it with `read_file`, because print mode denies that
+read on some builds (the run then fails with `permission_denied`; see
+`troubleshooting.md`). Core rule:
 
 > The reference owns the face. The prompt owns scene, wardrobe, lighting, mood, pose.
 
@@ -71,5 +74,5 @@ python3 {baseDir}/scripts/agy_image.py \
   --refs-dir /path/refs \
   --subject-anchor "a young woman" \
   --width 1024 --height 1280 \
-  --out /home/ubuntu/agy_images/onsen.png --crop
+  --out ~/agy_images/onsen.png --crop
 ```

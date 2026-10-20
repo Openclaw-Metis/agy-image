@@ -1,40 +1,66 @@
 # Troubleshooting — agy image generation
 
-## Output is 1024x1024 square instead of the requested size
-- Cause: agy ignored the size for this run (its native canvas is square).
-- Fix: re-run with `--crop` so the script center-crops to the target aspect and scales
-  to exact pixels with ffmpeg. The composed prompt already forbids the square fallback,
-  but a single run can still drift — `--crop` makes the size deterministic.
+Failures arrive as `status: "failed"` with an `error_kind`, a `hint`, and the agy
+output tails (`agy_stdout_tail`, `agy_stderr_tail`). Start from the `error_kind`.
 
-## Dimensions are close but not exact (e.g. 819x1024 vs 1024x1280)
-- Cause: agy produced a near-ratio crop, or ffmpeg rounded to an even dimension.
-- Fix: run with `--crop` to force the exact requested `width x height`.
+## `no_output` — "agy did not produce the output file"
+- The script already polled `--out` and the brain folder for `--wait-seconds`
+  (default 240 s). If you know agy is slow today, retry once with `--wait-seconds 420`.
+- Check the brain folder by hand: `~/.gemini/antigravity-cli/brain/<conversation_id>/`
+  (the id is in the JSON) and its `.tempmediaStorage/`. A file there that is newer than
+  the run means the stem or timing did not match; copy it and report.
+- Content moderation: simplify or rephrase the prompt and retry once.
 
-## JSON `format` says "jpeg" but the file is named `.png`
-- Expected quirk: agy sometimes writes JPEG bytes under a `.png` name. The image is
-  fine; the `format` field reports the true container. Re-encode via ffmpeg/`--crop`
-  if you need a real PNG.
+## `quota_exhausted`
+- The native image quota is used up (about ten images, reset roughly 4h40m later).
+  Retrying burns time and fails the same way. Stop, tell the user, and give the reset
+  time if agy printed one. `agy -p "/quota" --output-format json` shows the model
+  quota only, not the image quota.
 
-## `status: failed` — "agy did not produce the output file"
-- Read `agy_stdout_tail` / `agy_stderr_tail` in the JSON.
-- Common causes:
-  - `agy` not on PATH → ensure `/home/ubuntu/.local/bin` is in PATH, or pass `--agy-bin`.
-  - Not authenticated → run agy interactively once to complete local auth.
-  - Content moderation → simplify or rephrase the prompt and retry.
+## `permission_denied`
+- Print mode soft-denied a tool call and named the allow-rule on stderr (quoted in
+  `agy_stderr_tail`). With `--ref`, the usual cause is agy trying to read the reference.
+- Options, all needing the user's approval: add that allow-rule to agy's
+  `settings.json` permissions; or pass `--allow-agy-permissions` for this one run; or
+  retry without `--ref`.
 
-## Timeout
-- Print mode buffers; image gen can take minutes. Default `--timeout 12m`. Increase it
-  (e.g. `--timeout 15m`) for complex prompts. An empty log before timeout is normal.
+## `timeout`
+- agy did not finish within `--timeout` plus a 60 s grace and was stopped. Retry once
+  with a longer `--timeout` (e.g. `20m`). Repeated timeouts usually mean quota or
+  service trouble: check `/quota`.
+
+## `agy_error`, `auth_required`, `agy_missing`
+- `agy_error`: agy exited non-zero; read `agy_stderr_tail`.
+- `auth_required`: run `agy` interactively once to sign in.
+- `agy_missing`: install agy, or pass `--agy-bin` with the full path
+  (Windows: `%LOCALAPPDATA%\agy\bin\agy.exe`).
+
+## `out_exists`
+- The target file is already there. Ask the user before replacing it, then re-run with
+  `--overwrite`, or choose another `--out`. A stale file is never reported as a result:
+  only files written after the run started count.
+
+## `reentry`
+- The script was started inside an agy run (`AGY_IMAGE_DEPTH` set). The inner agent must
+  use its native image tool instead of calling the wrapper again.
+
+## Output is 1024x1024 square, or close but not exact (e.g. 1376x768 for 1920x1080)
+- agy ignored the size or used its native canvas. Re-run with `--crop` (and
+  `--overwrite`): the script center-crops to the target aspect and scales to exact pixels.
+
+## JSON `format` is "jpeg" for a `.png` path, or `warning` mentions ffmpeg
+- ffmpeg is missing, so the JPEG bytes were kept. Install ffmpeg (or put it on PATH)
+  and re-run; with ffmpeg the file is re-encoded and `converted` is true.
 
 ## Reference image seems ignored (face is generic / wrong)
 - Use 1–2 clear front-facing references, not 3+.
 - Remove facial descriptors from the prompt so the reference owns the face.
-- Confirm the reference paths exist (the script fails fast if any are missing) and that
-  their directory was added — pass `--refs-dir`.
+- Confirm the reference paths exist (the script fails fast with `refs_missing`) and pass
+  `--refs-dir` so their folder is in agy's workspace.
 
-## ffmpeg enforce did nothing
-- `--crop` needs ffmpeg on PATH. Check `command -v ffmpeg`. Without it, re-run agy with a
-  clearer explicit pixel instruction, or crop manually.
+## Windows console shows garbled characters
+- The script writes UTF-8 to stdout/stderr itself. If a caller still decodes with the
+  ANSI code page, read the output as UTF-8 or run Python with `-X utf8`.
 
 ## Dry run to inspect before spending quota
 - Add `--dry-run` to print the composed prompt, the resolved `--add-dir` list, and the
